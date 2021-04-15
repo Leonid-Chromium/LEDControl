@@ -3,11 +3,11 @@ GccApplication1.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .text         00000076  00000000  00000000  00000054  2**1
+  0 .text         00000078  00000000  00000000  00000054  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  1 .data         00000000  00800060  00800060  000000ca  2**0
+  1 .data         00000000  00800060  00800060  000000cc  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  2 .comment      00000030  00000000  00000000  000000ca  2**0
+  2 .comment      00000030  00000000  00000000  000000cc  2**0
                   CONTENTS, READONLY
   3 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  000000fc  2**2
                   CONTENTS, READONLY
@@ -55,7 +55,7 @@ Disassembly of section .text:
   2a:	de bf       	out	0x3e, r29	; 62
   2c:	cd bf       	out	0x3d, r28	; 61
   2e:	02 d0       	rcall	.+4      	; 0x34 <main>
-  30:	20 c0       	rjmp	.+64     	; 0x72 <_exit>
+  30:	21 c0       	rjmp	.+66     	; 0x74 <_exit>
 
 00000032 <__bad_interrupt>:
   32:	e6 cf       	rjmp	.-52     	; 0x0 <__vectors>
@@ -100,44 +100,45 @@ int main(void)
   4c:	86 bd       	out	0x26, r24	; 38
 	//настройка всех портов на выход
 	//DDRA = 0b11111111;
-	DDRB = 0b11111111;
-  4e:	8f ef       	ldi	r24, 0xFF	; 255
-  50:	87 bb       	out	0x17, r24	; 23
+	DDRB |= 0b00000100;
+  4e:	87 b3       	in	r24, 0x17	; 23
+  50:	84 60       	ori	r24, 0x04	; 4
+  52:	87 bb       	out	0x17, r24	; 23
 	//настройка таймера
-	TCCR0A = 0b11000011;
-  52:	83 ec       	ldi	r24, 0xC3	; 195
-  54:	80 bf       	out	0x30, r24	; 48
+	TCCR0A = 0b10000011;
+  54:	83 e8       	ldi	r24, 0x83	; 131
+  56:	80 bf       	out	0x30, r24	; 48
 	TCCR0B = 0b00000010;
-  56:	82 e0       	ldi	r24, 0x02	; 2
-  58:	83 bf       	out	0x33, r24	; 51
+  58:	82 e0       	ldi	r24, 0x02	; 2
+  5a:	83 bf       	out	0x33, r24	; 51
 	//настройка точки сравнения скважности
 	OCR0A = 225;
-  5a:	81 ee       	ldi	r24, 0xE1	; 225
-  5c:	86 bf       	out	0x36, r24	; 54
+  5c:	81 ee       	ldi	r24, 0xE1	; 225
+  5e:	86 bf       	out	0x36, r24	; 54
 	//Сравнение с просто свечением
 	PORTA = 0b00000001;
-  5e:	81 e0       	ldi	r24, 0x01	; 1
-  60:	8b bb       	out	0x1b, r24	; 27
+  60:	81 e0       	ldi	r24, 0x01	; 1
+  62:	8b bb       	out	0x1b, r24	; 27
 	
 	while (1)
 	{
 		//Проверка на принятие информации
 		if (ADCSRA & 1<<ADIF) //Если флаг ADIF не равен 1
-  62:	34 9b       	sbis	0x06, 4	; 6
-  64:	fe cf       	rjmp	.-4      	; 0x62 <__SREG__+0x23>
+  64:	34 9b       	sbis	0x06, 4	; 6
+  66:	fe cf       	rjmp	.-4      	; 0x64 <__SREG__+0x25>
 		{
 			//изменение точки скважности
 			OCR0A = ADCL;
-  66:	84 b1       	in	r24, 0x04	; 4
-  68:	86 bf       	out	0x36, r24	; 54
+  68:	84 b1       	in	r24, 0x04	; 4
+  6a:	86 bf       	out	0x36, r24	; 54
 			ADCSRA|= (1<<ADIF); //Снова выставляем флаг
-  6a:	86 b1       	in	r24, 0x06	; 6
-  6c:	80 61       	ori	r24, 0x10	; 16
-  6e:	86 b9       	out	0x06, r24	; 6
-  70:	f8 cf       	rjmp	.-16     	; 0x62 <__SREG__+0x23>
+  6c:	86 b1       	in	r24, 0x06	; 6
+  6e:	80 61       	ori	r24, 0x10	; 16
+  70:	86 b9       	out	0x06, r24	; 6
+  72:	f8 cf       	rjmp	.-16     	; 0x64 <__SREG__+0x25>
 
-00000072 <_exit>:
-  72:	f8 94       	cli
+00000074 <_exit>:
+  74:	f8 94       	cli
 
-00000074 <__stop_program>:
-  74:	ff cf       	rjmp	.-2      	; 0x74 <__stop_program>
+00000076 <__stop_program>:
+  76:	ff cf       	rjmp	.-2      	; 0x76 <__stop_program>
