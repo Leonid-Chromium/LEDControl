@@ -3,27 +3,29 @@ GccApplication1.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .text         00000078  00000000  00000000  00000054  2**1
+  0 .text         0000007a  00000000  00000000  00000054  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  1 .data         00000000  00800060  00800060  000000cc  2**0
+  1 .data         00000000  00800060  00800060  000000ce  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  2 .comment      00000030  00000000  00000000  000000cc  2**0
+  2 .comment      00000030  00000000  00000000  000000ce  2**0
                   CONTENTS, READONLY
-  3 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  000000fc  2**2
+  3 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  00000100  2**2
                   CONTENTS, READONLY
-  4 .debug_aranges 00000020  00000000  00000000  00000138  2**0
+  4 .debug_aranges 00000020  00000000  00000000  0000013c  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_info   000004a8  00000000  00000000  00000158  2**0
+  5 .debug_info   00000562  00000000  00000000  0000015c  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_abbrev 0000043e  00000000  00000000  00000600  2**0
+  6 .debug_abbrev 000004c0  00000000  00000000  000006be  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_line   000001ec  00000000  00000000  00000a3e  2**0
+  7 .debug_line   00000264  00000000  00000000  00000b7e  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_frame  00000024  00000000  00000000  00000c2c  2**2
+  8 .debug_frame  00000024  00000000  00000000  00000de4  2**2
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_str    000002ba  00000000  00000000  00000c50  2**0
+  9 .debug_str    0000030f  00000000  00000000  00000e08  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_ranges 00000010  00000000  00000000  00000f0a  2**0
+ 10 .debug_loc    00000046  00000000  00000000  00001117  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 11 .debug_ranges 00000010  00000000  00000000  0000115d  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -55,90 +57,105 @@ Disassembly of section .text:
   2a:	de bf       	out	0x3e, r29	; 62
   2c:	cd bf       	out	0x3d, r28	; 61
   2e:	02 d0       	rcall	.+4      	; 0x34 <main>
-  30:	21 c0       	rjmp	.+66     	; 0x74 <_exit>
+  30:	22 c0       	rjmp	.+68     	; 0x76 <_exit>
 
 00000032 <__bad_interrupt>:
   32:	e6 cf       	rjmp	.-52     	; 0x0 <__vectors>
 
 00000034 <main>:
-
+#define F_CPU 1000000 UL;
 
 int main(void)
 {
-	//Порт А пин 3 на вход
-	DDRA &= (0<<PINA0);
-  34:	8a b3       	in	r24, 0x1a	; 26
-  36:	1a ba       	out	0x1a, r1	; 26
+	//Порт А0 пин 13 на вход
+	DDRA = 0b00000000;
+  34:	1a ba       	out	0x1a, r1	; 26
 	//Настраиваем АЦП
 	ADMUX=
-  38:	90 e8       	ldi	r25, 0x80	; 128
-  3a:	97 b9       	out	0x07, r25	; 7
-	(0<<MUX5)| //выбираем пин 13 для ввода через мультиплексер
+  36:	81 e0       	ldi	r24, 0x01	; 1
+  38:	87 b9       	out	0x07, r24	; 7
+	(0<<MUX3)|
+	(0<<MUX4)|
+	(0<<MUX5)| //выбираем ADC1 для ввода через мультиплексер
 	(0<<REFS0)|
-	(1<<REFS1)| //вибираем внутрений ИОН 1,1В
-	(0<<ADLAR); //выравнивание справо
+	(0<<REFS1); //вибираем внешний источник
+	ADCSRB=
+  3a:	80 e1       	ldi	r24, 0x10	; 16
+  3c:	83 b9       	out	0x03, r24	; 3
+	(1<<ADLAR)| //выравнивание справо
+	(0<<ADTS0)|
+	(0<<ADTS1)|
+	(0<<ADTS2);
 	
 	ADCSRA|=
-  3c:	86 b1       	in	r24, 0x06	; 6
-  3e:	82 68       	ori	r24, 0x82	; 130
-  40:	86 b9       	out	0x06, r24	; 6
-	(1<<ADEN)| //разрешаем работу АЦП
-	(0<<ADPS2)|
-	(1<<ADPS1)|
-	(0<<ADPS0); //Устанавливаем прескейлер на 4
+  3e:	86 b1       	in	r24, 0x06	; 6
+  40:	84 6a       	ori	r24, 0xA4	; 164
+  42:	86 b9       	out	0x06, r24	; 6
+	(1<<ADPS2)| 
+	(0<<ADPS1)|
+	(0<<ADPS0)|//Устанавливаем прескейлер на 4
+	(1<<ADATE)|
+	(0<<ADIE);
+	DIDR0=0xff;
+  44:	9f ef       	ldi	r25, 0xFF	; 255
+  46:	91 b9       	out	0x01, r25	; 1
 	// Запуск АЦП
 	ADCSRA|=(1<<ADSC);
-  42:	86 b1       	in	r24, 0x06	; 6
-  44:	80 64       	ori	r24, 0x40	; 64
-  46:	86 b9       	out	0x06, r24	; 6
+  48:	86 b1       	in	r24, 0x06	; 6
+  4a:	80 64       	ori	r24, 0x40	; 64
+  4c:	86 b9       	out	0x06, r24	; 6
 	
+	
+	
+	unsigned char Mlad = ADCL;
+  4e:	84 b1       	in	r24, 0x04	; 4
 	//настройка пределителя тактовой частоты контроллера
-	CLKPR = 128;
-  48:	96 bd       	out	0x26, r25	; 38
-	CLKPR = 4;
-  4a:	84 e0       	ldi	r24, 0x04	; 4
-  4c:	86 bd       	out	0x26, r24	; 38
+	//CLKPR = 128;
+	//CLKPR = 4;
+	
 	//настройка всех портов на выход
-	//DDRA = 0b11111111;
-	DDRB |= 0b00000100;
-  4e:	87 b3       	in	r24, 0x17	; 23
-  50:	84 60       	ori	r24, 0x04	; 4
-  52:	87 bb       	out	0x17, r24	; 23
+	DDRB = 0b11111111;
+  50:	97 bb       	out	0x17, r25	; 23
 	//настройка таймера
 	TCCR0A = 0b10000011;
-  54:	83 e8       	ldi	r24, 0x83	; 131
-  56:	80 bf       	out	0x30, r24	; 48
+  52:	83 e8       	ldi	r24, 0x83	; 131
+  54:	80 bf       	out	0x30, r24	; 48
 	TCCR0B = 0b00000010;
-  58:	82 e0       	ldi	r24, 0x02	; 2
-  5a:	83 bf       	out	0x33, r24	; 51
+  56:	82 e0       	ldi	r24, 0x02	; 2
+  58:	83 bf       	out	0x33, r24	; 51
 	//настройка точки сравнения скважности
-	OCR0A = 225;
-  5c:	81 ee       	ldi	r24, 0xE1	; 225
-  5e:	86 bf       	out	0x36, r24	; 54
-	//Сравнение с просто свечением
-	PORTA = 0b00000001;
-  60:	81 e0       	ldi	r24, 0x01	; 1
-  62:	8b bb       	out	0x1b, r24	; 27
-	
-	while (1)
-	{
-		//Проверка на принятие информации
-		if (ADCSRA & 1<<ADIF) //Если флаг ADIF не равен 1
-  64:	34 9b       	sbis	0x06, 4	; 6
-  66:	fe cf       	rjmp	.-4      	; 0x64 <__SREG__+0x25>
-		{
-			//изменение точки скважности
-			OCR0A = ADCL;
-  68:	84 b1       	in	r24, 0x04	; 4
-  6a:	86 bf       	out	0x36, r24	; 54
-			ADCSRA|= (1<<ADIF); //Снова выставляем флаг
-  6c:	86 b1       	in	r24, 0x06	; 6
-  6e:	80 61       	ori	r24, 0x10	; 16
-  70:	86 b9       	out	0x06, r24	; 6
-  72:	f8 cf       	rjmp	.-16     	; 0x64 <__SREG__+0x25>
+	OCR0A = 128;
+  5a:	80 e8       	ldi	r24, 0x80	; 128
+  5c:	86 bf       	out	0x36, r24	; 54
+		}
+		mid = (min/2+max/2);
+		*/
+		//изменение точки скважности
+		
+		ADCSRA|=(1<<ADSC);
+  5e:	86 b1       	in	r24, 0x06	; 6
+  60:	80 64       	ori	r24, 0x40	; 64
+  62:	86 b9       	out	0x06, r24	; 6
+	#else
+		//round up by default
+		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+	#endif
 
-00000074 <_exit>:
-  74:	f8 94       	cli
+	__builtin_avr_delay_cycles(__ticks_dc);
+  64:	83 ec       	ldi	r24, 0xC3	; 195
+  66:	99 e0       	ldi	r25, 0x09	; 9
+  68:	01 97       	sbiw	r24, 0x01	; 1
+  6a:	f1 f7       	brne	.-4      	; 0x68 <__SREG__+0x29>
+  6c:	00 c0       	rjmp	.+0      	; 0x6e <__SREG__+0x2f>
+  6e:	00 00       	nop
+		_delay_ms(10);
+		OCR0A=ADCH;
+  70:	85 b1       	in	r24, 0x05	; 5
+  72:	86 bf       	out	0x36, r24	; 54
+  74:	f4 cf       	rjmp	.-24     	; 0x5e <__SREG__+0x1f>
 
-00000076 <__stop_program>:
-  76:	ff cf       	rjmp	.-2      	; 0x76 <__stop_program>
+00000076 <_exit>:
+  76:	f8 94       	cli
+
+00000078 <__stop_program>:
+  78:	ff cf       	rjmp	.-2      	; 0x78 <__stop_program>
